@@ -5,70 +5,69 @@ from pynput.mouse import Controller
 import time
 
 mouse = Controller()
-kamera = cv2.VideoCapture(0)
+camera = cv2.VideoCapture(0)
 
-if not kamera.isOpened():
-    print("Kamera tidak dapat dibuka.")
+if not camera.isOpened():
+    print("Camera cannot be opened.")
     exit()
 
-detektor = HandDetector(detectionCon=0.3, maxHands=1)
+detector = HandDetector(detectionCon=0.3, maxHands=1)
 
-scroll_sebelumnya = 0
+previous_scroll = 0
 
 def main():
-    global scroll_sebelumnya
+    global previous_scroll
     while True:
-        ret, frame = kamera.read()
+        ret, frame = camera.read()
         frame = cv2.flip(frame, 1)
 
         if not ret:
-            print("Gagal membaca frame.")
+            print("Failed to read frame.")
             break
 
-        tangan, gambar = detektor.findHands(frame)
+        hands, image = detector.findHands(frame)
 
-        if tangan:
-            tangan_pertama = tangan[0]
-            daftar_landmark = tangan_pertama["lmList"]
+        if hands:
+            first_hand = hands[0]
+            landmark_list = first_hand["lmList"]
 
-            if len(daftar_landmark) != 0:
-                x1, y1 = daftar_landmark[4][0], daftar_landmark[4][1]
-                x2, y2 = daftar_landmark[8][0], daftar_landmark[8][1]
+            if len(landmark_list) != 0:
+                x1, y1 = landmark_list[4][0], landmark_list[4][1]
+                x2, y2 = landmark_list[8][0], landmark_list[8][1]
                 cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
 
-                cv2.circle(gambar, (x1, y1), 5, (0, 0, 255), cv2.FILLED)
-                cv2.circle(gambar, (x2, y2), 5, (0, 0, 255), cv2.FILLED)
-                cv2.line(gambar, (x1, y1), (x2, y2), (0, 0, 0), 3)
+                cv2.circle(image, (x1, y1), 5, (0, 0, 255), cv2.FILLED)
+                cv2.circle(image, (x2, y2), 5, (0, 0, 255), cv2.FILLED)
+                cv2.line(image, (x1, y1), (x2, y2), (0, 0, 0), 3)
 
-                panjang = math.hypot(x2 - x1, y2 - y1)
-                jumlah_scroll = 0
+                length = math.hypot(x2 - x1, y2 - y1)
+                scroll_amount = 0
 
-                if panjang < 50:  
-                    jumlah_scroll = 1
-                elif panjang > 100:  
-                    jumlah_scroll = -1
+                if length < 50:  
+                    scroll_amount = 1
+                elif length > 100:  
+                    scroll_amount = -1
 
-                if jumlah_scroll != 0:
-                    scroll_sebelumnya += jumlah_scroll * 0.1
-                    mouse.scroll(0, scroll_sebelumnya)
-                    scroll_sebelumnya = max(min(scroll_sebelumnya, 1), -1)
+                if scroll_amount != 0:
+                    previous_scroll += scroll_amount * 0.1
+                    mouse.scroll(0, previous_scroll)
+                    previous_scroll = max(min(previous_scroll, 1), -1)
 
-                if panjang < 50:
-                    cv2.circle(gambar, (cx, cy), 5, (0, 255, 0), cv2.FILLED)
-                elif panjang > 100:
-                    cv2.circle(gambar, (cx, cy), 5, (0, 0, 0), cv2.FILLED)
+                if length < 50:
+                    cv2.circle(image, (cx, cy), 5, (0, 255, 0), cv2.FILLED)
+                elif length > 100:
+                    cv2.circle(image, (cx, cy), 5, (0, 0, 0), cv2.FILLED)
                 else:
-                    cv2.circle(gambar, (cx, cy), 5, (0, 0, 255), cv2.FILLED)
+                    cv2.circle(image, (cx, cy), 5, (0, 0, 255), cv2.FILLED)
 
-        cv2.imshow("Kontrol Scroll dengan Tangan", gambar)
-        cv2.resizeWindow("Kontrol Scroll dengan Tangan", 700, 500)
+        cv2.imshow("Hand Scroll Control", image)
+        cv2.resizeWindow("Hand Scroll Control", 700, 500)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    kamera.release()
+    camera.release()
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
- 
